@@ -22,11 +22,12 @@ type alias Model =
     , purpose_id : Int
     , place_id : Int
     , date : String
+    , tmp : String
     }
 
 init : () -> ( Model, Cmd Msg )
 init _ = 
-    (Model 0 "" 0 0 0 "2019-3-25", Cmd.none)
+    (Model 0 "" 0 0 0 "" "", Cmd.none)
 
 type Msg
     = Input String
@@ -37,21 +38,68 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Input input ->
-            ({ model | item = input }, Cmd.none)
+            if (String.split " " input |> List.length) == 2 then
+                ( updateModel model model.tmp, Cmd.none)
+            else
+                ({ model | tmp = input }, Cmd.none)
         Send ->
             ({ model | item = "posted" }, postBalance model)
         _ ->
-            ({ model | item = "aaa" }, Cmd.none)
+            ( model, Cmd.none)
+
+updateModel : Model -> String -> Model
+updateModel model str =
+    if model.amount == 0 then
+        case String.toInt str of
+            Just value ->
+                { model | amount = value, tmp = "" }
+            Nothing ->
+                { model | tmp = "" }
+    else if model.item == "" then
+        { model | item = str, tmp = "" }
+    else if model.kind_id == 0 then
+        case String.toInt str of
+            Just value ->
+                { model | kind_id = value, tmp = "" }
+            Nothing ->
+                { model | tmp = "" }
+    else if model.purpose_id == 0 then
+        case String.toInt str of
+            Just value ->
+                { model | purpose_id = value, tmp = "" }
+            Nothing ->
+                { model | tmp = "" }
+    else if model.place_id == 0 then
+        case String.toInt str of
+            Just value ->
+                { model | place_id = value, tmp = "" }
+            Nothing ->
+                { model | tmp = "" }
+    else if model.date == "" then
+        { model | date = str, tmp = "" }
+    else
+        model
 
 view : Model -> Html Msg
 view model =
     div []
         [ Html.form [ onSubmit Send ]
-            [ input [ Attributes.value model.item, onInput Input ] []
+            [ input [ Attributes.value model.tmp, onInput Input ] []
             , button
-                [ disabled (String.length model.item < 1) ]
+                [ disabled (String.length model.tmp < 1) ]
                 [ text "Submit" ]
             ]
+        , text <| String.fromInt model.amount
+        , br [] []
+        , text model.item
+        , br [] []
+        , text <| String.fromInt model.kind_id
+        , br [] []
+        , text <| String.fromInt model.purpose_id
+        , br [] []
+        , text <| String.fromInt model.place_id
+        , br [] []
+        , text model.date
         ]
 
 postBalance : Model -> Cmd Msg
@@ -86,11 +134,22 @@ encodeBalance model =
 
 decodeBalance : Decode.Decoder Model
 decodeBalance =
-    Decode.map6 Model
+    Decode.map7 Model
         (field "amount" Decode.int)
         (field "item" Decode.string)
         (field "kind_id" Decode.int)
         (field "purpose_id" Decode.int)
         (field "place_id" Decode.int)
         (field "date" Decode.string)
+        (field "tmp" Decode.string)
     
+type alias Balance =
+    { amount : Int
+    , item : String
+    , kind_id : Int
+    , purpose_id : Int
+    , place_id : Int
+    , date : String
+    }
+
+
