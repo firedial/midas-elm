@@ -16,18 +16,13 @@ main =
     }
 
 type alias Model =
-    { amount : Int
-    , item : String
-    , kind_id : Int
-    , purpose_id : Int
-    , place_id : Int
-    , date : String
+    { balance : Balance
     , tmp : String
     }
 
 init : () -> ( Model, Cmd Msg )
 init _ = 
-    (Model 0 "" 0 0 0 "" "", Cmd.none)
+    (Model (Balance 0 "" 0 0 0 "") "", Cmd.none)
 
 type Msg
     = Input String
@@ -43,42 +38,46 @@ update msg model =
             else
                 ({ model | tmp = input }, Cmd.none)
         Send ->
-            ({ model | item = "posted" }, postBalance model)
+            ({ model | balance = Balance 0 "" 0 0 0 "" }, postBalance model.balance)
         _ ->
             ( model, Cmd.none)
 
 updateModel : Model -> String -> Model
 updateModel model str =
-    if model.amount == 0 then
+    { model | balance = updateBalance model.balance str, tmp = "" }
+
+updateBalance : Balance -> String -> Balance
+updateBalance balance str =
+    if balance.amount == 0 then
         case String.toInt str of
             Just value ->
-                { model | amount = value, tmp = "" }
+                { balance | amount = value }
             Nothing ->
-                { model | tmp = "" }
-    else if model.item == "" then
-        { model | item = str, tmp = "" }
-    else if model.kind_id == 0 then
+                balance 
+    else if balance.item == "" then
+        { balance | item = str }
+    else if balance.kind_id == 0 then
         case String.toInt str of
             Just value ->
-                { model | kind_id = value, tmp = "" }
+                { balance | kind_id = value }
             Nothing ->
-                { model | tmp = "" }
-    else if model.purpose_id == 0 then
+                balance 
+    else if balance.purpose_id == 0 then
         case String.toInt str of
             Just value ->
-                { model | purpose_id = value, tmp = "" }
+                { balance | purpose_id = value }
             Nothing ->
-                { model | tmp = "" }
-    else if model.place_id == 0 then
+                balance 
+    else if balance.place_id == 0 then
         case String.toInt str of
             Just value ->
-                { model | place_id = value, tmp = "" }
+                { balance | place_id = value }
             Nothing ->
-                { model | tmp = "" }
-    else if model.date == "" then
-        { model | date = str, tmp = "" }
+                balance 
+    else if balance.date == "" then
+        { balance | date = str }
     else
-        model
+        balance
 
 view : Model -> Html Msg
 view model =
@@ -89,26 +88,26 @@ view model =
                 [ disabled (String.length model.tmp < 1) ]
                 [ text "Submit" ]
             ]
-        , text <| String.fromInt model.amount
+        , text <| String.fromInt model.balance.amount
         , br [] []
-        , text model.item
+        , text model.balance.item
         , br [] []
-        , text <| String.fromInt model.kind_id
+        , text <| String.fromInt model.balance.kind_id
         , br [] []
-        , text <| String.fromInt model.purpose_id
+        , text <| String.fromInt model.balance.purpose_id
         , br [] []
-        , text <| String.fromInt model.place_id
+        , text <| String.fromInt model.balance.place_id
         , br [] []
-        , text model.date
+        , text model.balance.date
         ]
 
-postBalance : Model -> Cmd Msg
-postBalance model =
+postBalance : Balance -> Cmd Msg
+postBalance balance =
     let
         url =
             "http://localhost:8080/api/v1/balance/"
         body =
-            encodeBalance model
+            encodeBalance balance
                 |> Http.jsonBody
     in
         Http.request
@@ -121,27 +120,26 @@ postBalance model =
             , tracker = Nothing
             }
 
-encodeBalance : Model -> Encode.Value
-encodeBalance model =
+encodeBalance : Balance -> Encode.Value
+encodeBalance balance =
     Encode.object
-        [ ("amount", Encode.int model.amount)
-        , ("item", Encode.string model.item)
-        , ("kind_id", Encode.int model.kind_id)
-        , ("purpose_id", Encode.int model.purpose_id)
-        , ("place_id", Encode.int model.place_id)
-        , ("date", Encode.string model.date)
+        [ ("amount", Encode.int balance.amount)
+        , ("item", Encode.string balance.item)
+        , ("kind_id", Encode.int balance.kind_id)
+        , ("purpose_id", Encode.int balance.purpose_id)
+        , ("place_id", Encode.int balance.place_id)
+        , ("date", Encode.string balance.date)
         ]
 
-decodeBalance : Decode.Decoder Model
+decodeBalance : Decode.Decoder Balance
 decodeBalance =
-    Decode.map7 Model
+    Decode.map6 Balance
         (field "amount" Decode.int)
         (field "item" Decode.string)
         (field "kind_id" Decode.int)
         (field "purpose_id" Decode.int)
         (field "place_id" Decode.int)
         (field "date" Decode.string)
-        (field "tmp" Decode.string)
     
 type alias Balance =
     { amount : Int
@@ -151,5 +149,37 @@ type alias Balance =
     , place_id : Int
     , date : String
     }
+
+type alias Attribute =
+    { id : Int
+    , name : String
+    , description : String
+    , group_id : Int
+    }
+
+enableAttribute : List Attribute -> String -> List Attribute
+enableAttribute attributes str =
+    List.filter (isStartStringAttribute str) attributes
+
+isStartStringAttribute : String -> Attribute -> Bool
+isStartStringAttribute splitString attribute =
+    isStartString splitString attribute.name
+
+isStartString : String -> String -> Bool
+isStartString splitString separatedString =
+    let
+        str = String.split splitString separatedString |> List.head
+    in
+        case str of
+            Just s ->
+                if s == "" then
+                    True
+                else
+                    False
+            Nothing ->
+                False
+
+        
+
 
 
