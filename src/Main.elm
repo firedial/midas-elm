@@ -17,12 +17,14 @@ main =
 
 type alias Model =
     { balance : Balance
+    , attributeMove : AttributeMove
     , tmp : String
+    , inputStatus : InputStatus
     }
 
 init : () -> ( Model, Cmd Msg )
 init _ = 
-    (Model (Balance 0 "" 0 0 0 "") "", Cmd.none)
+    (Model (Balance 0 "" 0 0 0 "") (AttributeMove "" 0 0 0 "") "" None, Cmd.none)
 
 type Msg
     = Input String
@@ -31,19 +33,78 @@ type Msg
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    case msg of
-        Input input ->
-            if (String.split " " input |> List.length) == 2 then
-                ( updateModel model model.tmp, Cmd.none)
-            else
-                ({ model | tmp = input }, Cmd.none)
-        Send ->
-            ({ model | balance = Balance 0 "" 0 0 0 "" }, postBalance model.balance)
-        _ ->
-            ( model, Cmd.none)
+    if model.inputStatus == Out then
+        case msg of
+            Input input ->
+                if (String.split " " input |> List.length) == 2 then
+                    ( updateBalanceModel model model.tmp, Cmd.none)
+                else
+                    ({ model | tmp = input }, Cmd.none)
+            Send ->
+                ({ model | balance = Balance 0 "" 0 0 0 "", inputStatus = None }, postBalance model.balance)
+            _ ->
+                ( model, Cmd.none)
+    else if model.inputStatus == Move then
+        case msg of
+            Input input ->
+                if (String.split " " input |> List.length) == 2 then
+                    ( updateAttributeMoveModel model model.tmp, Cmd.none)
+                else
+                    ({ model | tmp = input }, Cmd.none)
+            Send ->
+                ({ model | attributeMove = AttributeMove "" 0 0 0 "", inputStatus = None }, postAttributeMove model.attributeMove)
+            _ ->
+                ( model, Cmd.none)
+    else
+        case msg of
+            Input input ->
+                if (String.split " " input |> List.length) == 2 then
+                    if model.tmp == "out" then
+                        ({ model | inputStatus = Out, tmp = ""}, Cmd.none)
+                    else if model.tmp == "move" then
+                        ({ model | inputStatus = Move, tmp = ""}, Cmd.none)
+                    else
+                        ({ model | tmp = "" }, Cmd.none)
+                else
+                    ({ model | tmp = input }, Cmd.none)
+            _ ->
+                ( model, Cmd.none)
 
-updateModel : Model -> String -> Model
-updateModel model str =
+updateAttributeMoveModel : Model -> String -> Model
+updateAttributeMoveModel model str =
+    { model | attributeMove = updateAttributeMove model.attributeMove str, tmp = "" }
+
+updateAttributeMove : AttributeMove -> String -> AttributeMove
+updateAttributeMove attributeMove str =
+    if attributeMove.attribute == "" then
+        { attributeMove | attribute = str }
+    else if attributeMove.amount == 0 then
+        case String.toInt str of
+            Just value ->
+                { attributeMove | amount = value }
+            Nothing ->
+                attributeMove 
+    else if attributeMove.beforeId == 0 then
+        case String.toInt str of
+            Just value ->
+                { attributeMove | beforeId = value }
+            Nothing ->
+                attributeMove 
+    else if attributeMove.afterId == 0 then
+        case String.toInt str of
+            Just value ->
+                { attributeMove | afterId = value }
+            Nothing ->
+                attributeMove 
+    else if attributeMove.date == "" then
+        { attributeMove | date = str }
+    else
+        attributeMove
+
+
+
+updateBalanceModel : Model -> String -> Model
+updateBalanceModel model str =
     { model | balance = updateBalance model.balance str, tmp = "" }
 
 updateBalance : Balance -> String -> Balance
@@ -88,6 +149,9 @@ view model =
                 [ disabled (String.length model.tmp < 1) ]
                 [ text "Submit" ]
             ]
+        , br [] []
+        , text <| transStatusToString model.inputStatus
+        , br [] []
         , text <| String.fromInt model.balance.amount
         , br [] []
         , text model.balance.item
@@ -99,6 +163,54 @@ view model =
         , text <| String.fromInt model.balance.place_id
         , br [] []
         , text model.balance.date
+        , br [] []
+        , br [] []
+        , text model.attributeMove.attribute
+        , br [] []
+        , text <| String.fromInt model.attributeMove.amount
+        , br [] []
+        , text <| String.fromInt model.attributeMove.beforeId
+        , br [] []
+        , text <| String.fromInt model.attributeMove.afterId
+        , br [] []
+        , text model.attributeMove.date
+        , br [] []
+        ]
+
+transStatusToString : InputStatus -> String
+transStatusToString status =
+    case status of 
+        Out -> "out"
+        Move -> "move"
+        None -> "none"
+
+postAttributeMove : AttributeMove -> Cmd Msg
+postAttributeMove attributeMove =
+    let
+        url =
+            "http://localhost:8080/api/v1/move/"
+        body =
+            encodeAttributeMove attributeMove
+                |> Http.jsonBody
+    in
+        Http.request
+            { method = "POST"
+            , headers = []
+            , url = url
+            , body = body
+            , expect = Http.expectJson Receive Decode.string
+            , timeout = Nothing
+            , tracker = Nothing
+            }
+
+encodeAttributeMove : AttributeMove -> Encode.Value
+encodeAttributeMove attributeMove =
+    Encode.object
+        [ ("attribute", Encode.string attributeMove.attribute)
+        , ("amount", Encode.int attributeMove.amount)
+        , ("before_id", Encode.int attributeMove.beforeId)
+        , ("after_id", Encode.int attributeMove.afterId)
+        , ("date", Encode.string attributeMove.date)
         ]
 
 postBalance : Balance -> Cmd Msg
@@ -155,6 +267,16 @@ type alias Attribute =
     , name : String
     , description : String
     , group_id : Int
+    }
+
+type InputStatus = Out | Move | None
+
+type alias AttributeMove =
+    { attribute : String
+    , amount : Int
+    , beforeId : Int
+    , afterId : Int
+    , date : String
     }
 
 enableAttribute : List Attribute -> String -> List Attribute
