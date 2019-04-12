@@ -112,7 +112,7 @@ updateBalance balance str =
     if balance.amount == 0 then
         case String.toInt str of
             Just value ->
-                { balance | amount = value }
+                { balance | amount = -1 * value }
             Nothing ->
                 balance 
     else if balance.item == "" then
@@ -188,7 +188,7 @@ postAttributeMove : AttributeMove -> Cmd Msg
 postAttributeMove attributeMove =
     let
         url =
-            "http://localhost:8080/api/v1/move/"
+            "http://192.168.1.6:8080/api/v1/move/"
         body =
             encodeAttributeMove attributeMove
                 |> Http.jsonBody
@@ -217,7 +217,7 @@ postBalance : Balance -> Cmd Msg
 postBalance balance =
     let
         url =
-            "http://localhost:8080/api/v1/balance/"
+            "http://192.168.1.6:8080/api/v1/balance/"
         body =
             encodeBalance balance
                 |> Http.jsonBody
