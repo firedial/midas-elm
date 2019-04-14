@@ -1,4 +1,6 @@
-module Model.AttributeMove exposing (AttributeMove, init, interpretation)
+module Model.AttributeMove exposing (AttributeMove, init, interpretation, encode)
+
+import Json.Encode as Encode exposing (..)
 
 type alias AttributeMove =
     { attribute : Maybe String
@@ -28,5 +30,43 @@ interpretation str =
 init : AttributeMove
 init =
     AttributeMove Nothing Nothing Nothing Nothing Nothing
+
+encode : AttributeMove -> Encode.Value
+encode attributeMove =
+    Encode.object
+        [ ("attribute", Encode.string <| maybeStringText attributeMove.attribute)
+        , ("amount", Encode.int <| maybeIntNumber attributeMove.amount)
+        , ("before_id", Encode.int <| maybeIntNumber attributeMove.beforeId)
+        , ("after_id", Encode.int <| maybeIntNumber attributeMove.afterId)
+        , ("date", Encode.string <| maybeStringText attributeMove.date)
+        ]
+
+
+
+
+maybeIntNumber : Maybe Int -> Int
+maybeIntNumber n =
+    case n of
+        Nothing ->
+            0
+        Just k ->
+            k
+
+
+maybeIntText : Maybe Int -> String
+maybeIntText n =
+    case n of
+        Nothing ->
+            ""
+        Just k ->
+            String.fromInt k
+
+maybeStringText : Maybe String -> String
+maybeStringText n =
+    case n of
+        Nothing ->
+            ""
+        Just k ->
+            k
 
 

@@ -1,4 +1,6 @@
-module Model.Balance exposing (Balance, init, interpretation)
+module Model.Balance exposing (Balance, init, interpretation, encode)
+
+import Json.Encode as Encode exposing (..)
 
 type alias Balance =
     { amount : Maybe Int
@@ -43,7 +45,38 @@ init : Balance
 init =
     Balance Nothing Nothing Nothing Nothing Nothing Nothing
 
+encode : Balance -> Encode.Value
+encode balance =
+    Encode.object
+        [ ("amount", Encode.int <| maybeIntNumber balance.amount)
+        , ("item", Encode.string <| maybeStringText balance.item)
+        , ("kind_id", Encode.int <| maybeIntNumber balance.kind_id)
+        , ("purpose_id", Encode.int <| maybeIntNumber balance.purpose_id)
+        , ("place_id", Encode.int <| maybeIntNumber balance.place_id)
+        , ("date", Encode.string <| maybeStringText balance.date)
+        ]
 
+-- decodeBalance : Decode.Decoder Balance
+-- decodeBalance =
+--     Decode.map6 Balance
+--         (field "amount" Decode.int)
+--         (field "item" Decode.string)
+--         (field "kind_id" Decode.int)
+--         (field "purpose_id" Decode.int)
+--         (field "place_id" Decode.int)
+--         (field "date" Decode.string)
+    
+
+
+
+
+maybeIntNumber : Maybe Int -> Int
+maybeIntNumber n =
+    case n of
+        Nothing ->
+            0
+        Just k ->
+            k
 
 
 maybeIntText : Maybe Int -> String

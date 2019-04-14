@@ -34,17 +34,29 @@ update msg model =
     if model.inputStatus == Out then
         case msg of
             Input input ->
-                ( updateBalanceModel model input, Cmd.none)
+                (
+                    { model
+                        | balance = Balance.interpretation input
+                        , tmp = input
+                    } 
+                    , Cmd.none
+                )
             Send ->
-                ({ model | balance = Balance.init, inputStatus = None }, postBalance model.balance)
+                ({ model | balance = Balance.init, inputStatus = None }, Balance.encode model.balance |> post)
             _ ->
                 ( model, Cmd.none)
     else if model.inputStatus == Move then
         case msg of
             Input input ->
-                ( updateAttributeMoveModel model input, Cmd.none)
+                (
+                    { model
+                        | attributeMove = AttributeMove.interpretation input
+                        , tmp = input
+                    } 
+                    , Cmd.none
+                )
             Send ->
-                ({ model | attributeMove = AttributeMove.init, inputStatus = None }, postAttributeMove model.attributeMove)
+                ({ model | attributeMove = AttributeMove.init, inputStatus = None }, AttributeMove.encode model.attributeMove |> post)
             _ ->
                 ( model, Cmd.none)
     else
@@ -61,14 +73,6 @@ update msg model =
                     ({ model | tmp = input }, Cmd.none)
             _ ->
                 ( model, Cmd.none)
-
-updateAttributeMoveModel : Model -> String -> Model
-updateAttributeMoveModel model str =
-    { model | attributeMove = AttributeMove.interpretation str, tmp = str }
-
-updateBalanceModel : Model -> String -> Model
-updateBalanceModel model str =
-    { model | balance = Balance.interpretation str, tmp = str }
 
 view : Model -> Html Msg
 view model =
@@ -130,14 +134,11 @@ transStatusToString status =
         Move -> "move"
         None -> "none"
 
-postAttributeMove : AttributeMove -> Cmd Msg
-postAttributeMove attributeMove =
+post : Encode.Value -> Cmd Msg
+post encode =
     let
-        url =
-            getDomain ++ "/api/v1/move/"
-        body =
-            encodeAttributeMove attributeMove
-                |> Http.jsonBody
+        url = getDomain ++ "/api/v1/balance/"
+        body = encode |> Http.jsonBody
     in
         Http.request
             { method = "POST"
@@ -148,56 +149,4 @@ postAttributeMove attributeMove =
             , timeout = Nothing
             , tracker = Nothing
             }
-
-encodeAttributeMove : AttributeMove -> Encode.Value
-encodeAttributeMove attributeMove =
-    Encode.object [ ("item", Encode.string "aaa") ]
-        -- [ ("attribute", Encode.string attributeMove.attribute)
-        -- , ("amount", Encode.int attributeMove.amount)
-        -- , ("before_id", Encode.int attributeMove.beforeId)
-        -- , ("after_id", Encode.int attributeMove.afterId)
-        -- , ("date", Encode.string attributeMove.date)
-        -- ]
-
-postBalance : Balance -> Cmd Msg
-postBalance balance =
-    let
-        url =
-            getDomain ++ "/api/v1/balance/"
-        body =
-            encodeBalance balance
-                |> Http.jsonBody
-    in
-        Http.request
-            { method = "POST"
-            , headers = []
-            , url = url
-            , body = body
-            , expect = Http.expectJson Receive Decode.string
-            , timeout = Nothing
-            , tracker = Nothing
-            }
-
-encodeBalance : Balance -> Encode.Value
-encodeBalance balance =
-    Encode.object [ ("item", Encode.string "aaa") ]
---         [ ("amount", Encode.int balance.amount)
---         , ("item", Encode.string balance.item)
---         , ("kind_id", Encode.int balance.kind_id)
---         , ("purpose_id", Encode.int balance.purpose_id)
---         , ("place_id", Encode.int balance.place_id)
---         , ("date", Encode.string balance.date)
---         ]
--- 
--- decodeBalance : Decode.Decoder Balance
--- decodeBalance =
---     Decode.map6 Balance
---         (field "amount" Decode.int)
---         (field "item" Decode.string)
---         (field "kind_id" Decode.int)
---         (field "purpose_id" Decode.int)
---         (field "place_id" Decode.int)
---         (field "date" Decode.string)
-    
-
 
