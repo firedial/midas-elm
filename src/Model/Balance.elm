@@ -1,4 +1,4 @@
-module Balance exposing (Balance, interpretation, init)
+module Model.Balance exposing (Balance, init, interpretation)
 
 type alias Balance =
     { amount : Maybe Int
@@ -27,7 +27,38 @@ interpretation str =
     in
         Balance amount item kind_id purpose_id place_id date
  
+stringizing : Balance -> List String
+stringizing balance =
+    let
+        amount = maybeIntText balance.amount 
+        item = maybeStringText balance.item
+        kind_id = maybeIntText balance.kind_id
+        purpose_id = maybeIntText balance.purpose_id
+        place_id = maybeIntText balance.place_id
+        date = maybeStringText balance.date
+    in
+        amount :: item :: kind_id :: purpose_id :: place_id :: date :: []
+
 init : Balance
 init =
     Balance Nothing Nothing Nothing Nothing Nothing Nothing
+
+
+
+
+maybeIntText : Maybe Int -> String
+maybeIntText n =
+    case n of
+        Nothing ->
+            ""
+        Just k ->
+            String.fromInt k
+
+maybeStringText : Maybe String -> String
+maybeStringText n =
+    case n of
+        Nothing ->
+            ""
+        Just k ->
+            k
 

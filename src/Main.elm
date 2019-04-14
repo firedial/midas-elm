@@ -6,7 +6,10 @@ import Json.Encode as Encode exposing (..)
 import Json.Decode as Decode exposing (..)
 import Http exposing (..)
 
-import Balance exposing (..)
+import Model.Balance as Balance exposing (..)
+import Model.AttributeMove as AttributeMove exposing (..)
+import Config.Env exposing (..)
+import Model.Model as Model exposing (..)
 
 main : Program () Model Msg
 main =
@@ -17,16 +20,9 @@ main =
     , subscriptions = \_ -> Sub.none
     }
 
-type alias Model =
-    { balance : Balance
-    , attributeMove : AttributeMove
-    , tmp : String
-    , inputStatus : InputStatus
-    }
-
 init : () -> ( Model, Cmd Msg )
 init _ = 
-    (Model (Balance.init) (AttributeMove "" 0 0 0 "") "" None, Cmd.none)
+    (Model Balance.init AttributeMove.init "" None, Cmd.none)
 
 type Msg
     = Input String
@@ -46,12 +42,9 @@ update msg model =
     else if model.inputStatus == Move then
         case msg of
             Input input ->
-                if (String.split " " input |> List.length) == 2 then
-                    ( updateAttributeMoveModel model model.tmp, Cmd.none)
-                else
-                    ({ model | tmp = input }, Cmd.none)
+                ( updateAttributeMoveModel model input, Cmd.none)
             Send ->
-                ({ model | attributeMove = AttributeMove "" 0 0 0 "", inputStatus = None }, postAttributeMove model.attributeMove)
+                ({ model | attributeMove = AttributeMove.init, inputStatus = None }, postAttributeMove model.attributeMove)
             _ ->
                 ( model, Cmd.none)
     else
@@ -71,36 +64,7 @@ update msg model =
 
 updateAttributeMoveModel : Model -> String -> Model
 updateAttributeMoveModel model str =
-    { model | attributeMove = updateAttributeMove model.attributeMove str, tmp = "" }
-
-updateAttributeMove : AttributeMove -> String -> AttributeMove
-updateAttributeMove attributeMove str =
-    if attributeMove.attribute == "" then
-        { attributeMove | attribute = str }
-    else if attributeMove.amount == 0 then
-        case String.toInt str of
-            Just value ->
-                { attributeMove | amount = value }
-            Nothing ->
-                attributeMove 
-    else if attributeMove.beforeId == 0 then
-        case String.toInt str of
-            Just value ->
-                { attributeMove | beforeId = value }
-            Nothing ->
-                attributeMove 
-    else if attributeMove.afterId == 0 then
-        case String.toInt str of
-            Just value ->
-                { attributeMove | afterId = value }
-            Nothing ->
-                attributeMove 
-    else if attributeMove.date == "" then
-        { attributeMove | date = str }
-    else
-        attributeMove
-
-
+    { model | attributeMove = AttributeMove.interpretation str, tmp = str }
 
 updateBalanceModel : Model -> String -> Model
 updateBalanceModel model str =
@@ -131,15 +95,15 @@ view model =
         , text <| maybeStringText model.balance.date
         , br [] []
         , br [] []
-        , text model.attributeMove.attribute
+        , text <| maybeStringText model.attributeMove.attribute
         , br [] []
-        , text <| String.fromInt model.attributeMove.amount
+        , text <| maybeIntText model.attributeMove.amount
         , br [] []
-        , text <| String.fromInt model.attributeMove.beforeId
+        , text <| maybeIntText model.attributeMove.beforeId
         , br [] []
-        , text <| String.fromInt model.attributeMove.afterId
+        , text <| maybeIntText model.attributeMove.afterId
         , br [] []
-        , text model.attributeMove.date
+        , text <| maybeStringText model.attributeMove.date
         , br [] []
         ]
 
@@ -170,7 +134,7 @@ postAttributeMove : AttributeMove -> Cmd Msg
 postAttributeMove attributeMove =
     let
         url =
-            "http://192.168.1.6:8080/api/v1/move/"
+            getDomain ++ "/api/v1/move/"
         body =
             encodeAttributeMove attributeMove
                 |> Http.jsonBody
@@ -187,19 +151,19 @@ postAttributeMove attributeMove =
 
 encodeAttributeMove : AttributeMove -> Encode.Value
 encodeAttributeMove attributeMove =
-    Encode.object
-        [ ("attribute", Encode.string attributeMove.attribute)
-        , ("amount", Encode.int attributeMove.amount)
-        , ("before_id", Encode.int attributeMove.beforeId)
-        , ("after_id", Encode.int attributeMove.afterId)
-        , ("date", Encode.string attributeMove.date)
-        ]
+    Encode.object [ ("item", Encode.string "aaa") ]
+        -- [ ("attribute", Encode.string attributeMove.attribute)
+        -- , ("amount", Encode.int attributeMove.amount)
+        -- , ("before_id", Encode.int attributeMove.beforeId)
+        -- , ("after_id", Encode.int attributeMove.afterId)
+        -- , ("date", Encode.string attributeMove.date)
+        -- ]
 
 postBalance : Balance -> Cmd Msg
 postBalance balance =
     let
         url =
-            "http://192.168.1.6:8080/api/v1/balance/"
+            getDomain ++ "/api/v1/balance/"
         body =
             encodeBalance balance
                 |> Http.jsonBody
@@ -235,46 +199,5 @@ encodeBalance balance =
 --         (field "place_id" Decode.int)
 --         (field "date" Decode.string)
     
-type alias Attribute =
-    { id : Int
-    , name : String
-    , description : String
-    , group_id : Int
-    }
-
-type InputStatus = Out | Move | None
-
-type alias AttributeMove =
-    { attribute : String
-    , amount : Int
-    , beforeId : Int
-    , afterId : Int
-    , date : String
-    }
-
-enableAttribute : List Attribute -> String -> List Attribute
-enableAttribute attributes str =
-    List.filter (isStartStringAttribute str) attributes
-
-isStartStringAttribute : String -> Attribute -> Bool
-isStartStringAttribute splitString attribute =
-    isStartString splitString attribute.name
-
-isStartString : String -> String -> Bool
-isStartString splitString separatedString =
-    let
-        str = String.split splitString separatedString |> List.head
-    in
-        case str of
-            Just s ->
-                if s == "" then
-                    True
-                else
-                    False
-            Nothing ->
-                False
-
-        
-
 
 
