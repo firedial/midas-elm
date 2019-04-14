@@ -1,5 +1,6 @@
-module Model.Balance exposing (Balance, init, interpretation, encode)
+module Model.Balance exposing (Balance, init, interpretation, encode, htmlMsg)
 
+import Html exposing (..)
 import Json.Encode as Encode exposing (..)
 
 type alias Balance =
@@ -29,8 +30,8 @@ interpretation str =
     in
         Balance amount item kind_id purpose_id place_id date
  
-stringizing : Balance -> List String
-stringizing balance =
+htmlMsg : Balance -> Html msg
+htmlMsg balance =
     let
         amount = maybeIntText balance.amount 
         item = maybeStringText balance.item
@@ -38,8 +39,21 @@ stringizing balance =
         purpose_id = maybeIntText balance.purpose_id
         place_id = maybeIntText balance.place_id
         date = maybeStringText balance.date
-    in
-        amount :: item :: kind_id :: purpose_id :: place_id :: date :: []
+    in  
+        div[]
+            [ text amount
+            , br [] []
+            , text item
+            , br [] []
+            , text kind_id
+            , br [] []
+            , text purpose_id
+            , br [] []
+            , text place_id
+            , br [] []
+            , text date
+            , br [] []
+            ]
 
 init : Balance
 init =
@@ -65,7 +79,7 @@ encode balance =
 --         (field "purpose_id" Decode.int)
 --         (field "place_id" Decode.int)
 --         (field "date" Decode.string)
-    
+
 
 
 

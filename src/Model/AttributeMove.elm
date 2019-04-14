@@ -1,6 +1,7 @@
-module Model.AttributeMove exposing (AttributeMove, init, interpretation, encode)
+module Model.AttributeMove exposing (AttributeMove, init, interpretation, encode, htmlMsg)
 
 import Json.Encode as Encode exposing (..)
+import Html exposing (..)
 
 type alias AttributeMove =
     { attribute : Maybe String
@@ -40,6 +41,28 @@ encode attributeMove =
         , ("after_id", Encode.int <| maybeIntNumber attributeMove.afterId)
         , ("date", Encode.string <| maybeStringText attributeMove.date)
         ]
+
+htmlMsg : AttributeMove -> Html msg
+htmlMsg attributeMove =
+    let
+        attribute = maybeStringText attributeMove.attribute
+        amount = maybeIntText attributeMove.amount 
+        beforeId = maybeIntText attributeMove.beforeId
+        afterId = maybeIntText attributeMove.afterId
+        date = maybeStringText attributeMove.date
+    in  
+        div[]
+            [ text attribute
+            , br [] []
+            , text amount
+            , br [] []
+            , text beforeId
+            , br [] []
+            , text afterId
+            , br [] []
+            , text date
+            , br [] []
+            ]
 
 
 

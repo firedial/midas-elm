@@ -86,46 +86,10 @@ view model =
         , br [] []
         , text <| transStatusToString model.inputStatus
         , br [] []
-        , text <| maybeIntText model.balance.amount
+        , Balance.htmlMsg model.balance
         , br [] []
-        , text <| maybeStringText model.balance.item
-        , br [] []
-        , text <| maybeIntText model.balance.kind_id
-        , br [] []
-        , text <| maybeIntText model.balance.purpose_id
-        , br [] []
-        , text <| maybeIntText model.balance.place_id
-        , br [] []
-        , text <| maybeStringText model.balance.date
-        , br [] []
-        , br [] []
-        , text <| maybeStringText model.attributeMove.attribute
-        , br [] []
-        , text <| maybeIntText model.attributeMove.amount
-        , br [] []
-        , text <| maybeIntText model.attributeMove.beforeId
-        , br [] []
-        , text <| maybeIntText model.attributeMove.afterId
-        , br [] []
-        , text <| maybeStringText model.attributeMove.date
-        , br [] []
+        , AttributeMove.htmlMsg model.attributeMove
         ]
-
-maybeIntText : Maybe Int -> String
-maybeIntText n =
-    case n of
-        Nothing ->
-            ""
-        Just k ->
-            String.fromInt k
-
-maybeStringText : Maybe String -> String
-maybeStringText n =
-    case n of
-        Nothing ->
-            ""
-        Just k ->
-            k
 
 transStatusToString : InputStatus -> String
 transStatusToString status =
