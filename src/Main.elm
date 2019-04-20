@@ -42,7 +42,7 @@ update msg model =
                     , Cmd.none
                 )
             Send ->
-                ({ model | balance = Balance.init, inputStatus = None }, Balance.encode model.balance |> balancePost)
+                ({ model | balance = Balance.init, inputStatus = None, tmp = "" }, Balance.encode model.balance |> balancePost)
             _ ->
                 ( model, Cmd.none)
     else if model.inputStatus == Move then
@@ -56,7 +56,7 @@ update msg model =
                     , Cmd.none
                 )
             Send ->
-                ({ model | attributeMove = AttributeMove.init, inputStatus = None }, AttributeMove.encode model.attributeMove |> attributeMovePost)
+                ({ model | attributeMove = AttributeMove.init, inputStatus = None, tmp = "" }, AttributeMove.encode model.attributeMove |> attributeMovePost)
             _ ->
                 ( model, Cmd.none)
     else
