@@ -21,7 +21,7 @@ interpretation str =
         maybeTail = Maybe.andThen List.tail
         maybeInt = Maybe.andThen String.toInt
 
-        amount = stringList |> maybeHead |> maybeInt
+        amount = stringList |> maybeHead |> maybeInt |> maybeMinus
         item = stringList |> maybeTail |> maybeHead
         kind_id = stringList |> maybeTail |> maybeTail |> maybeHead |> maybeInt
         purpose_id = stringList |> maybeTail |> maybeTail |> maybeTail |> maybeHead |> maybeInt
@@ -109,3 +109,8 @@ maybeStringText n =
         Just k ->
             k
 
+maybeMinus : Maybe Int -> Maybe Int
+maybeMinus n =
+    case n of
+        Nothing -> Nothing
+        Just k -> -1 * k |> Maybe.Just
