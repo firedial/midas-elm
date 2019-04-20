@@ -42,7 +42,7 @@ update msg model =
                     , Cmd.none
                 )
             Send ->
-                ({ model | balance = Balance.init, inputStatus = None }, Balance.encode model.balance |> post)
+                ({ model | balance = Balance.init, inputStatus = None }, Balance.encode model.balance |> balancePost)
             _ ->
                 ( model, Cmd.none)
     else if model.inputStatus == Move then
@@ -56,7 +56,7 @@ update msg model =
                     , Cmd.none
                 )
             Send ->
-                ({ model | attributeMove = AttributeMove.init, inputStatus = None }, AttributeMove.encode model.attributeMove |> post)
+                ({ model | attributeMove = AttributeMove.init, inputStatus = None }, AttributeMove.encode model.attributeMove |> attributeMovePost)
             _ ->
                 ( model, Cmd.none)
     else
@@ -98,10 +98,15 @@ transStatusToString status =
         Move -> "move"
         None -> "none"
 
-post : Encode.Value -> Cmd Msg
-post encode =
+balancePost : Encode.Value -> Cmd Msg
+balancePost = getDomain ++ "/api/v1/balance/" |> post
+
+attributeMovePost : Encode.Value -> Cmd Msg
+attributeMovePost = getDomain ++ "/api/v1/move/" |> post
+
+post : String -> Encode.Value -> Cmd Msg
+post url encode =
     let
-        url = getDomain ++ "/api/v1/balance/"
         body = encode |> Http.jsonBody
     in
         Http.request
