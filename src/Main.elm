@@ -23,7 +23,7 @@ main =
 
 init : () -> ( Model, Cmd Msg )
 init _ = 
-    (Model Balance.init AttributeMove.init "" None Nothing Nothing Nothing, getKindAttributes)
+    (Model Balance.init AttributeMove.init "" None False False False [] [] [], getKindAttributes)
 
 type Msg
     = Init
@@ -39,7 +39,7 @@ update msg model =
             Input input ->
                 (
                     { model
-                        | balance = Balance.interpretation input
+                        | balance = Balance.interpretation model.kinds model.purposes model.places input
                         , tmp = input
                     } 
                     , Cmd.none
@@ -77,12 +77,14 @@ update msg model =
             GetAttributes result ->
                 case result of
                     Ok list ->
-                        if model.kinds == Nothing then
-                            ({ model | kinds = Maybe.Just list }, getPurposeAttributes)
-                        else if model.purposes == Nothing then
-                            ({ model | purposes = Maybe.Just list }, getPlaceAttributes)
+                        if model.isSetKinds == False then
+                            ({ model | kinds = list, isSetKinds = True }, getPurposeAttributes)
+                        else if model.isSetPurposes == False then
+                            ({ model | purposes = list, isSetPurposes = True }, getPlaceAttributes)
+                        else if model.isSetPlaces == False then
+                            ({ model | places = list, isSetPlaces = True }, Cmd.none)
                         else
-                            ({ model | places = Maybe.Just list }, Cmd.none)
+                            ( model, Cmd.none )
                     _ ->
                         ( model, Cmd.none )
             _ ->
@@ -103,6 +105,9 @@ view model =
         , Balance.htmlMsg model.balance
         , br [] []
         , AttributeMove.htmlMsg model.attributeMove
+        , br [] []
+        , br [] []
+        , br [] []
         ]
 
 transStatusToString : InputStatus -> String

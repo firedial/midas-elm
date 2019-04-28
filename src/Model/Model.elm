@@ -11,7 +11,10 @@ type alias Model =
     , attributeMove : AttributeMove
     , tmp : String
     , inputStatus : InputStatus
-    , kinds : Maybe (List Attribute)
-    , purposes : Maybe (List Attribute)
-    , places : Maybe (List Attribute)
+    , isSetKinds : Bool
+    , isSetPurposes : Bool
+    , isSetPlaces : Bool
+    , kinds : List Attribute
+    , purposes : List Attribute
+    , places : List Attribute
     }
