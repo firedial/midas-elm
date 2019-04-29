@@ -3,6 +3,8 @@ module Model.Balance exposing (Balance, init, interpretation, encode, htmlMsg)
 import Html exposing (..)
 import Json.Encode as Encode exposing (..)
 
+import Model.Attribute as Attribute exposing (..)
+
 type alias Balance =
     { amount : Maybe Int
     , item : Maybe String
@@ -12,8 +14,8 @@ type alias Balance =
     , date : Maybe String
     }
 
-interpretation : String -> Balance
-interpretation str =
+interpretation : List Attribute.Attribute -> List Attribute.Attribute -> List Attribute.Attribute -> String -> Balance
+interpretation kinds purposes places str =
     let
         stringList = String.split " " str |> Maybe.Just
 
@@ -21,11 +23,15 @@ interpretation str =
         maybeTail = Maybe.andThen List.tail
         maybeInt = Maybe.andThen String.toInt
 
+        getKindNumber = getAttributeNumber kinds
+        getPurposeNumber = getAttributeNumber purposes
+        getPlaceNumber = getAttributeNumber places
+
         amount = stringList |> maybeHead |> maybeInt |> maybeMinus
         item = stringList |> maybeTail |> maybeHead
-        kind_id = stringList |> maybeTail |> maybeTail |> maybeHead |> maybeInt
-        purpose_id = stringList |> maybeTail |> maybeTail |> maybeTail |> maybeHead |> maybeInt
-        place_id = stringList |> maybeTail |> maybeTail |> maybeTail |> maybeTail |> maybeHead |> maybeInt
+        kind_id = stringList |> maybeTail |> maybeTail |> maybeHead |> getKindNumber
+        purpose_id = stringList |> maybeTail |> maybeTail |> maybeTail |> maybeHead |> getPurposeNumber
+        place_id = stringList |> maybeTail |> maybeTail |> maybeTail |> maybeTail |> maybeHead |> getPlaceNumber
         date = stringList |> maybeTail |> maybeTail |> maybeTail |> maybeTail |> maybeTail |> maybeHead
     in
         Balance amount item kind_id purpose_id place_id date

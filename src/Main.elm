@@ -10,6 +10,7 @@ import Model.Balance as Balance exposing (..)
 import Model.AttributeMove as AttributeMove exposing (..)
 import Config.Env exposing (..)
 import Model.Model as Model exposing (..)
+import Model.Attribute as Attribute exposing (..)
 
 main : Program () Model Msg
 main =
@@ -22,12 +23,14 @@ main =
 
 init : () -> ( Model, Cmd Msg )
 init _ = 
-    (Model Balance.init AttributeMove.init "" None, Cmd.none)
+    (Model Balance.init AttributeMove.init "" None False False False [] [] [], getKindAttributes)
 
 type Msg
-    = Input String
+    = Init
+    | Input String
     | Send
     | Receive (Result Http.Error String)
+    | GetAttributes (Result Http.Error (List Attribute.Attribute))
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
@@ -36,7 +39,7 @@ update msg model =
             Input input ->
                 (
                     { model
-                        | balance = Balance.interpretation input
+                        | balance = Balance.interpretation model.kinds model.purposes model.places input
                         , tmp = input
                     } 
                     , Cmd.none
@@ -44,7 +47,7 @@ update msg model =
             Send ->
                 ({ model | balance = Balance.init, inputStatus = None, tmp = "" }, Balance.encode model.balance |> balancePost)
             _ ->
-                ( model, Cmd.none)
+                ( model, Cmd.none )
     else if model.inputStatus == Move then
         case msg of
             Input input ->
@@ -58,7 +61,7 @@ update msg model =
             Send ->
                 ({ model | attributeMove = AttributeMove.init, inputStatus = None, tmp = "" }, AttributeMove.encode model.attributeMove |> attributeMovePost)
             _ ->
-                ( model, Cmd.none)
+                ( model, Cmd.none )
     else
         case msg of
             Input input ->
@@ -71,8 +74,21 @@ update msg model =
                         ({ model | tmp = "" }, Cmd.none)
                 else
                     ({ model | tmp = input }, Cmd.none)
+            GetAttributes result ->
+                case result of
+                    Ok list ->
+                        if model.isSetKinds == False then
+                            ({ model | kinds = list, isSetKinds = True }, getPurposeAttributes)
+                        else if model.isSetPurposes == False then
+                            ({ model | purposes = list, isSetPurposes = True }, getPlaceAttributes)
+                        else if model.isSetPlaces == False then
+                            ({ model | places = list, isSetPlaces = True }, Cmd.none)
+                        else
+                            ( model, Cmd.none )
+                    _ ->
+                        ( model, Cmd.none )
             _ ->
-                ( model, Cmd.none)
+                ( model, Cmd.none )
 
 view : Model -> Html Msg
 view model =
@@ -89,6 +105,9 @@ view model =
         , Balance.htmlMsg model.balance
         , br [] []
         , AttributeMove.htmlMsg model.attributeMove
+        , br [] []
+        , br [] []
+        , br [] []
         ]
 
 transStatusToString : InputStatus -> String
@@ -119,3 +138,21 @@ post url encode =
             , tracker = Nothing
             }
 
+getKindAttributes : Cmd Msg
+getKindAttributes =
+    getAttributes "kind"
+
+getPurposeAttributes : Cmd Msg
+getPurposeAttributes =
+    getAttributes "purpose"
+
+getPlaceAttributes : Cmd Msg
+getPlaceAttributes =
+    getAttributes "place"
+
+getAttributes : String -> Cmd Msg
+getAttributes attribute =
+    let
+        url = getDomain ++ "/api/v1/" ++ attribute ++ "/"
+    in
+        Http.get { url = url, expect = Http.expectJson GetAttributes decodeAttributes }
